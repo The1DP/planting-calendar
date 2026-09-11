@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What Can I Plant Now?</title>
+<style>
+  :root {
+    --bg: #f4f1e8;
+    --card: #ffffff;
+    --ink: #24301f;
+    --muted: #6b7561;
+    --green: #3f6b3f;
+    --green-dark: #2c4c2c;
+    --green-light: #e6efe0;
+    --amber: #b8792f;
+    --amber-light: #fbeee0;
+    --red: #b5422f;
+    --red-light: #fbe8e3;
+    --border: #ddd6c3;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.45;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  header h1 {
+    font-size: 1.7rem;
+    margin: 0 0 4px;
+    color: var(--green-dark);
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .today-pill {
+    display: inline-block;
+    margin-top: 10px;
+    background: var(--green-light);
+    color: var(--green-dark);
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .today-pill-wrap { text-align: center; }
+
+  .weather-banner {
+    margin: 14px 0 22px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+  }
+  .weather-banner.warn { background: var(--red-light); border-color: #e6bdb0; color: #7a2c1c; }
+  .weather-banner.ok { background: var(--green-light); border-color: #c7dab9; color: var(--green-dark); }
+  .weather-banner b { font-weight: 700; }
+  .weather-banner ul { margin: 6px 0 0; padding-left: 20px; }
+
+  .settings {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .settings summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--green-dark);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .settings summary::-webkit-details-marker { display: none; }
+  .settings summary .chev { transition: transform 0.15s; color: var(--muted); }
+  .settings[open] summary .chev { transform: rotate(90deg); }
+  .settings-body { margin-top: 14px; }
+
+  .loc-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .loc-row input[type="text"] {
+    flex: 1 1 220px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  .loc-results {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .loc-results button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #fff;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .loc-results button:last-child { border-bottom: none; }
+  .loc-results button:hover { background: var(--green-light); }
+  .loc-current { font-size: 0.85rem; margin-bottom: 6px; }
+  .loc-current b { color: var(--green-dark); }
+  .frost-status {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 14px;
+  }
+
+  .preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .preset-btn {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .preset-btn:hover { border-color: var(--green); }
+  .preset-btn.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+  .preset-btn:disabled { opacity: 0.55; cursor: default; }
+
+  .field-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .field {
+    flex: 1 1 200px;
+  }
+  .field label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .field input[type="date"] {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #fff;
+    color: var(--ink);
+  }
+  .no-frost-toggle {
+    margin: 12px 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  section.group { margin-bottom: 26px; }
+  .group h2 {
+    font-size: 1.05rem;
+    color: var(--green-dark);
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .group .hint { font-size: 0.82rem; color: var(--muted); font-weight: 400; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .plant-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+  .plant-card .name {
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .plant-card .cat {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .plant-card .action {
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: var(--green-dark);
+    font-weight: 500;
+  }
+  .plant-card.soon .action { color: var(--amber); }
+  .plant-card .spacing {
+    margin-top: 5px;
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+  .plant-card .tip {
+    margin-top: 3px;
+    font-size: 0.74rem;
+    color: var(--amber);
+  }
+
+  .empty-note {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+
+  table.ref {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  table.ref th, table.ref td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.ref th {
+    background: var(--green-light);
+    color: var(--green-dark);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  table.ref tr:last-child td { border-bottom: none; }
+  table.ref .tip { display: block; color: var(--amber); font-size: 0.78rem; margin-top: 2px; }
+  .ref-wrap { overflow-x: auto; }
+
+  .tips-list { margin: 0; padding-left: 20px; font-size: 0.88rem; }
+  .tips-list li { margin-bottom: 8px; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 30px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>🌱 What Can I Plant Now?</h1>
+    <p>A planting calendar for your 10&times;10 community garden plot &mdash; tuned to your location's real frost history and forecast.</p>
+  </header>
+
+  <div class="today-pill-wrap"><div class="today-pill" id="todayPill"></div></div>
+  <div class="weather-banner" id="weatherBanner">Checking the forecast&hellip;</div>
+
+  <details class="settings" id="settingsBox" open>
+    <summary>📍 Location &amp; growing season <span class="chev">▸</span></summary>
+    <div class="settings-body">
+      <div class="loc-row">
+        <input type="text" id="locInput" placeholder="City, region, or country &mdash; e.g. &quot;Valencia, Spain&quot;">
+        <button class="preset-btn" id="locSearchBtn" type="button">Search</button>
+        <button class="preset-btn" id="locGeoBtn" type="button">📍 Use my location</button>
+      </div>
+      <div class="loc-results" id="locResults" hidden></div>
+      <div class="loc-current" id="locCurrent"></div>
+      <div class="frost-status" id="frostStatus"></div>
+
+      <div class="preset-row" id="presetRow"></div>
+      <div class="field-row">
+        <div class="field">
+          <label for="springFrost">Last spring frost (approx.)</label>
+          <input type="date" id="springFrost">
+        </div>
+        <div class="field">
+          <label for="fallFrost">First fall frost (approx.)</label>
+          <input type="date" id="fallFrost">
+        </div>
+      </div>
+      <label class="no-frost-toggle">
+        <input type="checkbox" id="noFrost">
+        I'm frost-free / tropical &mdash; skip frost dates, show what grows year-round
+      </label>
+      <button class="preset-btn" id="recalcBtn" type="button">🔄 Recalculate from historical weather</button>
+    </div>
+  </details>
+
+  <section class="group">
+    <h2>🌱 Good to plant right now</h2>
+    <div id="nowCards" class="cards"></div>
+  </section>
+
+  <section class="group">
+    <h2>⏳ Coming up soon <span class="hint">(next 3 weeks)</span></h2>
+    <div id="soonCards" class="cards"></div>
+  </section>
+
+  <details class="settings">
+    <summary>📐 10&times;10 plot tips <span class="chev">▸</span></summary>
+    <div class="settings-body">
+      <ul class="tips-list">
+        <li>Sketch your 100 sq ft as a grid of 1 sq ft squares &mdash; each plant card below lists how many fit per square.</li>
+        <li>Put tall or trellised crops (peas, tomatoes, cucumbers) along the <b>north or east edge</b> so they don't shade shorter plants.</li>
+        <li>Skip full-size corn, pumpkins, melons, and sweet potatoes in a single shared 10&times;10 &mdash; they need far more room than that. Look for bush/patio varieties if you want to try anyway.</li>
+        <li>Give perennials (rosemary, thyme, oregano, strawberries) one corner &mdash; they'll live there for years, unlike your annual veggies.</li>
+        <li>Succession-plant fast crops like radish, lettuce, and arugula: resow a small new patch every 2&ndash;3 weeks instead of one big bed at once.</li>
+        <li>Leave ~20% of the plot open early in the season for whatever shows up next in "Coming up soon."</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="settings">
+    <summary>Full reference calendar <span class="chev">▸</span></summary>
+    <div class="settings-body ref-wrap">
+      <table class="ref" id="refTable">
+        <thead><tr><th>Plant</th><th>Category</th><th>Spring window</th><th>Fall window</th><th>10&times;10 spacing</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </details>
+
+  <footer>
+    Windows are general guidance for typical home gardens &mdash; always sanity-check against your local extension office for exact dates. Weather and frost history come from the free Open-Meteo API; your location and dates are stored only in your browser.
+  </footer>
+</div>
+
+<script>
+// ---------- Dataset ----------
+// rel windows are in days relative to the anchor frost date (negative = before, positive = after).
+// maturity = days to harvest, used so tender crops aren't suggested too close to fall frost.
+// perSqFt = plants per square foot (square-foot-gardening standard); < 1 means "1 plant per (1/perSqFt) sq ft".
+// plotTip = a short caution for shared small (10x10) plots.
+const PLANTS = [
+  { name: "Lettuce", cat: "Vegetable", perSqFt: 4, acts: [
+    { label: "Direct sow", anchor: "spring", min: -21, max: 28 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -56, max: -21 } ]},
+  { name: "Spinach", cat: "Vegetable", perSqFt: 9, acts: [
+    { label: "Direct sow", anchor: "spring", min: -28, max: 14 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -42, max: -14 } ]},
+  { name: "Peas", cat: "Vegetable", perSqFt: 8, plotTip: "trellis it — saves ground space", acts: [
+    { label: "Direct sow", anchor: "spring", min: -28, max: 7 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -70, max: -49 } ]},
+  { name: "Radish", cat: "Vegetable", perSqFt: 16, acts: [
+    { label: "Direct sow", anchor: "spring", min: -21, max: 35 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -42, max: -14 } ]},
+  { name: "Carrots", cat: "Vegetable", perSqFt: 16, acts: [
+    { label: "Direct sow", anchor: "spring", min: -14, max: 42 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -77, max: -42 } ]},
+  { name: "Beets", cat: "Vegetable", perSqFt: 9, acts: [
+    { label: "Direct sow", anchor: "spring", min: -14, max: 42 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -63, max: -35 } ]},
+  { name: "Kale", cat: "Vegetable", perSqFt: 1, acts: [
+    { label: "Direct sow", anchor: "spring", min: -21, max: 35 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -63, max: -28 } ]},
+  { name: "Swiss Chard", cat: "Vegetable", perSqFt: 1, acts: [
+    { label: "Direct sow", anchor: "spring", min: -14, max: 42 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -56, max: -21 } ]},
+  { name: "Arugula", cat: "Vegetable", perSqFt: 4, acts: [
+    { label: "Direct sow", anchor: "spring", min: -21, max: 42 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -49, max: -14 } ]},
+  { name: "Broccoli", cat: "Vegetable", perSqFt: 1, acts: [
+    { label: "Start indoors", anchor: "spring", min: -70, max: -49 },
+    { label: "Transplant seedlings", anchor: "spring", min: -14, max: 14 },
+    { label: "Transplant (fall crop)", anchor: "fall", min: -70, max: -49 } ]},
+  { name: "Cabbage", cat: "Vegetable", perSqFt: 1, acts: [
+    { label: "Start indoors", anchor: "spring", min: -70, max: -49 },
+    { label: "Transplant seedlings", anchor: "spring", min: -14, max: 14 },
+    { label: "Transplant (fall crop)", anchor: "fall", min: -77, max: -56 } ]},
+  { name: "Onions", cat: "Vegetable", perSqFt: 16, acts: [
+    { label: "Plant sets/transplants", anchor: "spring", min: -28, max: 21 } ]},
+  { name: "Garlic", cat: "Vegetable", perSqFt: 4, plotTip: "in the ground ~8 months — give it a dedicated corner", acts: [
+    { label: "Plant cloves (fall only)", anchor: "fall", min: -42, max: -14 } ]},
+  { name: "Parsley", cat: "Herb", perSqFt: 1, acts: [
+    { label: "Start indoors", anchor: "spring", min: -70, max: -42 },
+    { label: "Direct sow / transplant", anchor: "spring", min: -14, max: 28 } ]},
+  { name: "Cilantro", cat: "Herb", perSqFt: 4, acts: [
+    { label: "Direct sow", anchor: "spring", min: -21, max: 21 },
+    { label: "Direct sow (fall crop)", anchor: "fall", min: -49, max: -21 } ]},
+  { name: "Chives", cat: "Herb", perSqFt: 4, plotTip: "perennial — takes permanent space", acts: [
+    { label: "Direct sow / transplant", anchor: "spring", min: -14, max: 42 } ]},
+
+  // Warm-season, frost-tender (need enough days left before fall frost to mature)
+  { name: "Tomatoes", cat: "Vegetable", tender: true, maturity: 70, perSqFt: 1, plotTip: "cage or stake — keep to 1–2 plants in a shared plot", acts: [
+    { label: "Start indoors", anchor: "spring", min: -56, max: -42 },
+    { label: "Transplant outdoors", anchor: "spring", min: 0, max: 21, checkFall: true } ]},
+  { name: "Peppers", cat: "Vegetable", tender: true, maturity: 75, perSqFt: 1, acts: [
+    { label: "Start indoors", anchor: "spring", min: -77, max: -56 },
+    { label: "Transplant outdoors", anchor: "spring", min: 7, max: 28, checkFall: true } ]},
+  { name: "Basil", cat: "Herb", tender: true, maturity: 60, perSqFt: 4, acts: [
+    { label: "Start indoors", anchor: "spring", min: -42, max: -21 },
+    { label: "Direct sow / transplant", anchor: "spring", min: 7, max: 35, checkFall: true } ]},
+  { name: "Bush Beans", cat: "Vegetable", tender: true, maturity: 55, perSqFt: 9, acts: [
+    { label: "Direct sow", anchor: "spring", min: 0, max: 42, checkFall: true } ]},
+  { name: "Corn", cat: "Vegetable", tender: true, maturity: 75, perSqFt: 1, plotTip: "needs a 4×4 ft block to pollinate — usually skip in a single 10×10 shared plot", acts: [
+    { label: "Direct sow", anchor: "spring", min: 0, max: 35, checkFall: true } ]},
+  { name: "Squash / Zucchini", cat: "Vegetable", tender: true, maturity: 50, perSqFt: 0.25, plotTip: "vigorous — give it its own corner or grow vertically", acts: [
+    { label: "Direct sow", anchor: "spring", min: 0, max: 42, checkFall: true } ]},
+  { name: "Cucumbers", cat: "Vegetable", tender: true, maturity: 55, perSqFt: 2, plotTip: "trellis it to save ground space", acts: [
+    { label: "Direct sow", anchor: "spring", min: 0, max: 42, checkFall: true } ]},
+  { name: "Pumpkins", cat: "Vegetable", tender: true, maturity: 100, perSqFt: 0.0625, plotTip: "vines sprawl 10+ ft — not recommended for a shared 10×10; try a mini variety", acts: [
+    { label: "Direct sow", anchor: "spring", min: 0, max: 21, checkFall: true } ]},
+  { name: "Melons", cat: "Vegetable", tender: true, maturity: 80, perSqFt: 0.11, plotTip: "sprawling — trellis vertically to save space", acts: [
+    { label: "Direct sow", anchor: "spring", min: 7, max: 28, checkFall: true } ]},
+  { name: "Sunflowers", cat: "Flower", tender: true, maturity: 70, perSqFt: 0.25, plotTip: "tall — plant on the north side so it doesn't shade the rest of the plot", acts: [
+    { label: "Direct sow", anchor: "spring", min: 0, max: 56, checkFall: true } ]},
+  { name: "Marigolds", cat: "Flower", tender: true, maturity: 50, perSqFt: 4, acts: [
+    { label: "Start indoors", anchor: "spring", min: -56, max: -35 },
+    { label: "Direct sow / transplant", anchor: "spring", min: 0, max: 56, checkFall: true } ]},
+  { name: "Zinnias", cat: "Flower", tender: true, maturity: 60, perSqFt: 4, acts: [
+    { label: "Direct sow", anchor: "spring", min: 0, max: 70, checkFall: true } ]},
+
+  // Perennial herbs / fruit (flexible, but take permanent space in a shared plot)
+  { name: "Rosemary", cat: "Herb", perSqFt: 0.25, plotTip: "perennial & woody — permanent space, good in a corner", acts: [
+    { label: "Transplant", anchor: "spring", min: 0, max: 84 } ]},
+  { name: "Thyme", cat: "Herb", perSqFt: 4, plotTip: "perennial — takes permanent space", acts: [
+    { label: "Transplant", anchor: "spring", min: -7, max: 84 } ]},
+  { name: "Oregano", cat: "Herb", perSqFt: 4, plotTip: "perennial & spreading — takes permanent space", acts: [
+    { label: "Transplant", anchor: "spring", min: -7, max: 84 } ]},
+  { name: "Strawberries", cat: "Fruit", perSqFt: 4, plotTip: "perennial — keeps the same spot year after year", acts: [
+    { label: "Plant (spring)", anchor: "spring", min: -14, max: 28 },
+    { label: "Plant (fall)", anchor: "fall", min: -56, max: -21 } ]},
+
+  // Year-round / no-frost warm-season staples
+  { name: "Okra", cat: "Vegetable", tender: true, maturity: 60, perSqFt: 1, warmSeasonOnly: true, acts: [
+    { label: "Direct sow", anchor: "spring", min: 0, max: 56, checkFall: true } ]},
+  { name: "Sweet Potatoes", cat: "Vegetable", tender: true, maturity: 100, perSqFt: 0.25, warmSeasonOnly: true, plotTip: "vines sprawl widely — not ideal for a small shared plot", acts: [
+    { label: "Plant slips", anchor: "spring", min: 14, max: 42, checkFall: true } ]},
+];
+
+const MATURITY_BUFFER = 10; // extra safety days before first fall frost
+
+const PRESETS = [
+  { name: "Cold (short season)", spring: "04-25", fall: "09-25" },
+  { name: "Temperate (e.g. Zone 6)", spring: "04-15", fall: "10-15" },
+  { name: "Mild (e.g. Zone 8)", spring: "03-15", fall: "11-15" },
+  { name: "Southern Hemisphere temperate", spring: "10-10", fall: "04-20" },
+];
+
+const DEFAULT_LOCATION = { label: "Valencia, CA 91354", lat: 34.4285, lon: -118.5813, tz: "America/Los_Angeles" };
+
+// ---------- Date helpers ----------
+const CUM_DAYS = [0,31,59,90,120,151,181,212,243,273,304,334];
+function dayOfYear(month, day) { return CUM_DAYS[month - 1] + day; }
+function doyToMonthDay(doy) {
+  doy = Math.max(1, Math.min(365, Math.round(doy)));
+  let m = 12;
+  for (let i = 0; i < 12; i++) { if (doy <= (CUM_DAYS[i] + (i < 11 ? (CUM_DAYS[i+1]-CUM_DAYS[i]) : 31))) { m = i + 1; break; } }
+  const day = doy - CUM_DAYS[m - 1];
+  return { month: m, day: Math.max(1, day) };
+}
+function mdFromDateInput(value) {
+  const [y, m, d] = value.split("-").map(Number);
+  return { month: m, day: d };
+}
+function pad2(n) { return String(n).padStart(2, "0"); }
+function signedDiff(anchorDOY, todayDOY) {
+  let diff = (todayDOY - anchorDOY + 365) % 365;
+  if (diff > 182) diff -= 365;
+  return diff;
+}
+function fmtOffset(days) {
+  const wk = Math.round(Math.abs(days) / 7);
+  if (days === 0) return "on the frost date";
+  const when = days < 0 ? "before" : "after";
+  if (wk === 0) return `~${Math.abs(days)}d ${when}`;
+  return `${wk} wk ${when}`;
+}
+function windowText(min, max) {
+  return `${fmtOffset(min)} → ${fmtOffset(max)}`;
+}
+function spacingText(plant) {
+  if (!plant.perSqFt) return "—";
+  return plant.perSqFt >= 1 ? `${plant.perSqFt} per sq ft` : `1 per ${Math.round(1 / plant.perSqFt)} sq ft`;
+}
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// ---------- State ----------
+const els = {
+  springFrost: document.getElementById("springFrost"),
+  fallFrost: document.getElementById("fallFrost"),
+  noFrost: document.getElementById("noFrost"),
+  presetRow: document.getElementById("presetRow"),
+  todayPill: document.getElementById("todayPill"),
+  nowCards: document.getElementById("nowCards"),
+  soonCards: document.getElementById("soonCards"),
+  refBody: document.querySelector("#refTable tbody"),
+  settingsBox: document.getElementById("settingsBox"),
+  locInput: document.getElementById("locInput"),
+  locSearchBtn: document.getElementById("locSearchBtn"),
+  locGeoBtn: document.getElementById("locGeoBtn"),
+  locResults: document.getElementById("locResults"),
+  locCurrent: document.getElementById("locCurrent"),
+  frostStatus: document.getElementById("frostStatus"),
+  recalcBtn: document.getElementById("recalcBtn"),
+  weatherBanner: document.getElementById("weatherBanner"),
+};
+
+const today = new Date();
+const todayDOY = dayOfYear(today.getMonth() + 1, today.getDate());
+
+let gardenLoc = DEFAULT_LOCATION;
+
+function loadState() {
+  const saved = JSON.parse(localStorage.getItem("plantcal.v2") || "{}");
+  const defaultPreset = PRESETS[1];
+  gardenLoc = saved.location || DEFAULT_LOCATION;
+  els.springFrost.value = saved.springFrost || `2001-${defaultPreset.spring}`;
+  els.fallFrost.value = saved.fallFrost || `2001-${defaultPreset.fall}`;
+  els.noFrost.checked = !!saved.noFrost;
+  if (saved.hasChosen) els.settingsBox.open = false;
+  updateLocCurrent();
+  return !saved.hasChosen; // true = first run ever
+}
+function saveState() {
+  localStorage.setItem("plantcal.v2", JSON.stringify({
+    location: gardenLoc,
+    springFrost: els.springFrost.value,
+    fallFrost: els.fallFrost.value,
+    noFrost: els.noFrost.checked,
+    hasChosen: true,
+  }));
+}
+function updateLocCurrent() {
+  els.locCurrent.innerHTML = `📍 Using <b>${gardenLoc.label}</b> (${gardenLoc.lat.toFixed(2)}, ${gardenLoc.lon.toFixed(2)})`;
+}
+
+function buildPresets() {
+  els.presetRow.innerHTML = "";
+  PRESETS.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "preset-btn";
+    btn.type = "button";
+    btn.textContent = p.name;
+    btn.addEventListener("click", () => {
+      els.springFrost.value = `2001-${p.spring}`;
+      els.fallFrost.value = `2001-${p.fall}`;
+      saveState();
+      render();
+    });
+    els.presetRow.appendChild(btn);
+  });
+}
+
+// ---------- Weather / historical frost (Open-Meteo, no API key needed) ----------
+async function fetchForecastAndRender() {
+  els.weatherBanner.className = "weather-banner";
+  els.weatherBanner.textContent = `⛅ Checking the forecast for ${gardenLoc.label}…`;
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${gardenLoc.lat}&longitude=${gardenLoc.lon}&daily=temperature_2m_min,temperature_2m_max&temperature_unit=fahrenheit&timezone=auto&forecast_days=14`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("forecast http " + res.status);
+    const data = await res.json();
+    const times = data.daily.time, mins = data.daily.temperature_2m_min, maxs = data.daily.temperature_2m_max;
+    const frostDays = [];
+    for (let i = 0; i < times.length; i++) {
+      if (mins[i] <= 36) frostDays.push({ date: times[i], min: Math.round(mins[i]) });
+    }
+    if (frostDays.length) {
+      els.weatherBanner.className = "weather-banner warn";
+      const items = frostDays.slice(0, 5).map(f => {
+        const d = new Date(f.date + "T00:00:00");
+        return `<li>${d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })} &mdash; low ${f.min}°F</li>`;
+      }).join("");
+      els.weatherBanner.innerHTML = `<b>❄️ Frost watch for ${gardenLoc.label}:</b> hold off on tender transplants or cover them.<ul>${items}</ul>`;
+    } else {
+      els.weatherBanner.className = "weather-banner ok";
+      els.weatherBanner.innerHTML = `<b>✅ No frost in the 14-day forecast</b> for ${gardenLoc.label}. Today: high ${Math.round(maxs[0])}°F / low ${Math.round(mins[0])}°F.`;
+    }
+  } catch (e) {
+    els.weatherBanner.className = "weather-banner";
+    els.weatherBanner.textContent = "⚠️ Couldn't reach the weather service (offline?) — using your saved frost dates below instead.";
+  }
+}
+
+async function recalcHistoricalFrost() {
+  els.frostStatus.textContent = `📊 Crunching ${new Date().getFullYear() - 8}–${new Date().getFullYear() - 1} historical weather for ${gardenLoc.label}…`;
+  els.recalcBtn.disabled = true;
+  try {
+    const endYear = today.getFullYear() - 1;
+    const startYear = endYear - 7;
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${gardenLoc.lat}&longitude=${gardenLoc.lon}&start_date=${startYear}-01-01&end_date=${endYear}-12-31&daily=temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("archive http " + res.status);
+    const data = await res.json();
+    const times = data.daily.time, mins = data.daily.temperature_2m_min;
+    const byYear = {};
+    for (let i = 0; i < times.length; i++) {
+      const [y, m, d] = times[i].split("-").map(Number);
+      byYear[y] = byYear[y] || [];
+      byYear[y].push({ doy: dayOfYear(m, d), min: mins[i] });
+    }
+    const springDOYs = [], fallDOYs = [];
+    let noFrostYears = 0;
+    Object.values(byYear).forEach(days => {
+      const firstHalf = days.filter(d => d.doy <= 181 && d.min <= 32);
+      const secondHalf = days.filter(d => d.doy > 181 && d.min <= 32);
+      const spring = firstHalf.length ? Math.max(...firstHalf.map(d => d.doy)) : null;
+      const fall = secondHalf.length ? Math.min(...secondHalf.map(d => d.doy)) : null;
+      if (spring) springDOYs.push(spring);
+      if (fall) fallDOYs.push(fall);
+      if (!spring && !fall) noFrostYears++;
+    });
+    const yearCount = Object.keys(byYear).length;
+
+    if (yearCount && noFrostYears >= yearCount / 2) {
+      els.noFrost.checked = true;
+      els.frostStatus.textContent = `🌡️ Historical data (${yearCount} yrs) shows ${gardenLoc.label} rarely freezes — switched to frost-free mode. Uncheck above to set manual dates anyway.`;
+    } else if (springDOYs.length && fallDOYs.length) {
+      els.noFrost.checked = false;
+      const avgSpring = springDOYs.reduce((a, b) => a + b, 0) / springDOYs.length;
+      const avgFall = fallDOYs.reduce((a, b) => a + b, 0) / fallDOYs.length;
+      const sMD = doyToMonthDay(avgSpring), fMD = doyToMonthDay(avgFall);
+      els.springFrost.value = `2001-${pad2(sMD.month)}-${pad2(sMD.day)}`;
+      els.fallFrost.value = `2001-${pad2(fMD.month)}-${pad2(fMD.day)}`;
+      els.frostStatus.textContent = `📊 Based on ${yearCount} years of historical weather for ${gardenLoc.label}: avg last frost ~${MONTH_NAMES[sMD.month-1]} ${sMD.day}, avg first frost ~${MONTH_NAMES[fMD.month-1]} ${fMD.day}. Adjust anytime.`;
+    } else {
+      els.frostStatus.textContent = `Couldn't determine a clear frost pattern from ${yearCount} years of data for ${gardenLoc.label} — dates left as-is, adjust manually if needed.`;
+    }
+    saveState();
+    render();
+  } catch (e) {
+    els.frostStatus.textContent = "⚠️ Couldn't fetch historical weather (offline?) — dates left as-is; adjust manually if needed.";
+  } finally {
+    els.recalcBtn.disabled = false;
+  }
+}
+
+async function geocodeSearch(query) {
+  els.locResults.hidden = false;
+  els.locResults.innerHTML = `<div style="padding:8px 12px;font-size:0.85rem;color:var(--muted)">Searching…</div>`;
+  try {
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=6&language=en&format=json`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const results = data.results || [];
+    if (!results.length) {
+      els.locResults.innerHTML = `<div style="padding:8px 12px;font-size:0.85rem;color:var(--muted)">No matches — try a different spelling or a nearby bigger city.</div>`;
+      return;
+    }
+    els.locResults.innerHTML = "";
+    results.forEach(r => {
+      const parts = [r.name, r.admin1, r.country].filter(Boolean);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = parts.join(", ");
+      btn.addEventListener("click", () => {
+        gardenLoc = { label: parts.join(", "), lat: r.latitude, lon: r.longitude, tz: r.timezone || "auto" };
+        updateLocCurrent();
+        els.locResults.hidden = true;
+        els.locInput.value = "";
+        saveState();
+        fetchForecastAndRender();
+        recalcHistoricalFrost();
+      });
+      els.locResults.appendChild(btn);
+    });
+  } catch (e) {
+    els.locResults.innerHTML = `<div style="padding:8px 12px;font-size:0.85rem;color:var(--muted)">⚠️ Search failed (offline?) — try again later.</div>`;
+  }
+}
+
+els.locSearchBtn.addEventListener("click", () => {
+  const q = els.locInput.value.trim();
+  if (q) geocodeSearch(q);
+});
+els.locInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); const q = els.locInput.value.trim(); if (q) geocodeSearch(q); }
+});
+els.locGeoBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) { els.locCurrent.textContent = "Geolocation isn't available in this browser."; return; }
+  els.locGeoBtn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      gardenLoc = { label: `My location (${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)})`, lat: pos.coords.latitude, lon: pos.coords.longitude, tz: "auto" };
+      updateLocCurrent();
+      saveState();
+      fetchForecastAndRender();
+      recalcHistoricalFrost();
+      els.locGeoBtn.disabled = false;
+    },
+    () => { els.locCurrent.textContent = "Couldn't get your location — search for it above instead."; els.locGeoBtn.disabled = false; },
+    { timeout: 10000 }
+  );
+});
+els.recalcBtn.addEventListener("click", recalcHistoricalFrost);
+
+// ---------- Render ----------
+function render() {
+  saveState();
+  const noFrost = els.noFrost.checked;
+  const sf = mdFromDateInput(els.springFrost.value);
+  const ff = mdFromDateInput(els.fallFrost.value);
+  const springDOY = dayOfYear(sf.month, sf.day);
+  const fallDOY = dayOfYear(ff.month, ff.day);
+  const relSpring = signedDiff(springDOY, todayDOY);
+  const relFall = signedDiff(fallDOY, todayDOY);
+
+  const opts = today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  els.todayPill.textContent = noFrost ? `Today: ${opts} · frost-free mode` : `Today: ${opts}`;
+
+  const nowList = [];
+  const soonList = [];
+  const refRows = [];
+
+  PLANTS.forEach(plant => {
+    if (!noFrost && plant.warmSeasonOnly) { /* still evaluated normally below */ }
+
+    let bestNow = null;
+    let bestSoon = null;
+    const refParts = { spring: [], fall: [] };
+
+    plant.acts.forEach(act => {
+      const rel = act.anchor === "spring" ? relSpring : relFall;
+      refParts[act.anchor].push(`${act.label}: ${windowText(act.min, act.max)}`);
+
+      let active = rel >= act.min && rel <= act.max;
+      if (active && act.checkFall && plant.maturity) {
+        const neededBy = -(plant.maturity + MATURITY_BUFFER);
+        if (relFall > neededBy) active = false;
+      }
+      if (noFrost && (plant.tender || plant.warmSeasonOnly)) active = true;
+
+      if (active) {
+        bestNow = act.label;
+      } else if (!bestSoon && rel < act.min) {
+        const daysUntil = act.min - rel;
+        if (daysUntil <= 21) bestSoon = { label: act.label, days: daysUntil };
+      }
+    });
+
+    if (noFrost && !plant.tender && !plant.warmSeasonOnly) {
+      bestNow = bestNow || "Direct sow (mild climate)";
+    }
+
+    if (bestNow) nowList.push({ plant, action: bestNow });
+    else if (bestSoon) soonList.push({ plant, action: bestSoon.label, days: bestSoon.days });
+
+    refRows.push({
+      name: plant.name,
+      cat: plant.cat,
+      spring: refParts.spring.join(" · ") || "—",
+      fall: refParts.fall.join(" · ") || "—",
+      spacing: spacingText(plant),
+      tip: plant.plotTip,
+    });
+  });
+
+  renderCards(els.nowCards, nowList, "now");
+  renderCards(els.soonCards, soonList, "soon");
+  renderRef(refRows);
+}
+
+function renderCards(container, list, mode) {
+  container.innerHTML = "";
+  if (list.length === 0) {
+    const p = document.createElement("p");
+    p.className = "empty-note";
+    p.textContent = mode === "now"
+      ? "Nothing matches your window right now — check back soon, or open the reference calendar below."
+      : "Nothing coming up in the next few weeks.";
+    container.appendChild(p);
+    return;
+  }
+  list.sort((a, b) => a.plant.name.localeCompare(b.plant.name));
+  list.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "plant-card" + (mode === "soon" ? " soon" : "");
+    const tipHtml = item.plant.plotTip ? `<div class="tip">⚠ ${item.plant.plotTip}</div>` : "";
+    card.innerHTML = `
+      <div class="name"><span>${item.plant.name}</span><span class="cat">${item.plant.cat}</span></div>
+      <div class="action">${item.action}${mode === "soon" ? ` in ~${item.days}d` : ""}</div>
+      <div class="spacing">🔲 ${spacingText(item.plant)}</div>
+      ${tipHtml}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderRef(rows) {
+  els.refBody.innerHTML = "";
+  rows.sort((a, b) => a.name.localeCompare(b.name));
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    const tipHtml = r.tip ? `<span class="tip">⚠ ${r.tip}</span>` : "";
+    tr.innerHTML = `<td>${r.name}</td><td>${r.cat}</td><td>${r.spring}</td><td>${r.fall}</td><td>${r.spacing}${tipHtml}</td>`;
+    els.refBody.appendChild(tr);
+  });
+}
+
+[els.springFrost, els.fallFrost, els.noFrost].forEach(el => el.addEventListener("change", render));
+
+buildPresets();
+const isFirstRun = loadState();
+render();
+fetchForecastAndRender();
+if (isFirstRun) recalcHistoricalFrost();
+</script>
+</body>
+</html>
